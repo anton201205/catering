@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Catering – Proformas y pedidos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600&family=Inter:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Menú superior (solo con sesión iniciada) -->
+    <header id="menu" hidden>
+        <div class="brand">🍽️ CATERING <small>PROFORMAS</small></div>
+        <nav>
+            <button class="solo-cliente" data-nav="nuevo" onclick="nuevoEvento()">Nueva solicitud</button>
+            <button class="solo-cliente" data-nav="mis" onclick="mostrarCotizaciones()">Mis solicitudes</button>
+            <button class="solo-admin" data-nav="sol" onclick="mostrarSolicitudes()">Bandeja</button>
+            <button data-nav="av" onclick="mostrarAvisos()">Avisos <span class="badge" data-badge hidden></span></button>
+            <span id="nombreUsuario"></span>
+            <button onclick="salir()">Salir</button>
+        </nav>
+    </header>
+
+    <div id="mensaje" role="status" hidden></div>
+
+    <main>
+
+        <!-- ===== Iniciar sesión (RN13) ===== -->
+        <section id="login">
+            <form class="auth" data-accion="entrar">
+                <h2>Bienvenido</h2>
+                <p class="sub">Cotiza el catering de tu evento en minutos.</p>
+                <div class="tabs">
+                    <button type="button" class="on">Iniciar sesión</button>
+                    <button type="button" onclick="ir('registro')">Registrarse</button>
+                </div>
+                <label for="login_email">Correo</label>
+                <input id="login_email" type="email" autocomplete="email">
+                <label for="login_clave">Contraseña</label>
+                <input id="login_clave" type="password" autocomplete="current-password">
+                <div class="row"><button type="submit">Ingresar</button></div>
+                <p class="centro"><button type="button" class="link small" onclick="ir('admin')">Acceso vendedor</button></p>
+            </form>
+        </section>
+
+        <!-- ===== Registrarse (HU013) ===== -->
+        <section id="registro">
+            <form class="auth" data-accion="registrar">
+                <h2>Crea tu cuenta</h2>
+                <p class="sub">Necesitas una cuenta para registrar solicitudes y consultar tus proformas.</p>
+                <div class="tabs">
+                    <button type="button" onclick="ir('login')">Iniciar sesión</button>
+                    <button type="button" class="on">Registrarse</button>
+                </div>
+                <label for="reg_nombre">Nombre completo</label>
+                <input id="reg_nombre" autocomplete="name">
+                <label for="reg_tel">Teléfono (9 dígitos)</label>
+                <input id="reg_tel" type="tel" inputmode="numeric" maxlength="12" autocomplete="tel">
+                <label for="reg_email">Correo</label>
+                <input id="reg_email" type="email" autocomplete="email">
+                <label for="reg_clave">Contraseña (mín. 6 caracteres)</label>
+                <input id="reg_clave" type="password" autocomplete="new-password">
+                <div class="row"><button type="submit">Crear cuenta</button></div>
+            </form>
+        </section>
+
+        <!-- ===== Acceso vendedor ===== -->
+        <section id="admin">
+            <form class="auth" data-accion="entrarAdmin">
+                <h2>Vendedor</h2>
+                <p class="sub">Acceso para el equipo de catering.</p>
+                <label for="admin_usuario">Usuario</label>
+                <input id="admin_usuario" autocomplete="username">
+                <label for="admin_clave">Contraseña</label>
+                <input id="admin_clave" type="password" autocomplete="current-password">
+                <div class="row">
+                    <button type="button" class="link" onclick="ir('login')">Volver</button>
+                    <button type="submit">Ingresar</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- ===== HU001 / HU015: registrar solicitud con paquete y elementos ===== -->
+        <section id="evento">
+            <ol class="steps">
+                <li class="on">Datos del evento</li>
+                <li>Revisión</li>
+                <li>Proforma</li>
+            </ol>
+            <h2 id="tituloEvento">Nueva solicitud de catering</h2>
+            <p class="sub">Elige un paquete, ajusta sus elementos y recibe una proforma personalizada.</p>
+            <form data-accion="revisarEvento">
+                <div class="cols">
+                    <div><label for="f_nombre">Nombre completo</label><input id="f_nombre"></div>
+                    <div><label for="f_tel">Teléfono</label><input id="f_tel" type="tel" inputmode="numeric"></div>
+                    <div>
+                        <label for="f_tipo">Tipo de servicio</label>
+                        <select id="f_tipo"></select>
+                    </div>
+                    <div>
+                        <label for="f_fecha">Fecha del evento</label>
+                        <input id="f_fecha" type="date">
+                    </div>
+                    <div><label for="f_com">Número de comensales</label><input id="f_com" type="number" min="1"
+                            max="5000"></div>
+                    <div><label for="f_ubic">Ubicación</label><input id="f_ubic"></div>
+                </div>
+                <p class="hint">Se requieren 30 días de anticipación. Con 10 a 29 días la solicitud necesita
+                    autorización del vendedor.</p>
+
+                <div id="bloqueElementos" hidden>
+                    <h3 style="margin-top:22px">Elementos del servicio</h3>
+                    <p class="hint" style="margin:0 0 10px">Modifica las cantidades, quita lo que no necesites o agrega más
+                        elementos.</p>
+                    <div class="tabla">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Elemento</th>
+                                    <th>Cantidad</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="filasElementos"></tbody>
+                        </table>
+                    </div>
+                    <div class="agregar">
+                        <select id="f_extra" aria-label="Elemento a agregar"></select>
+                        <button type="button" class="link small" onclick="agregarElemento()">+ Agregar elemento</button>
+                    </div>
+                    <p class="hint">Los precios los verás en la proforma que te enviará el vendedor.</p>
+                </div>
+
+                <label for="f_specs">Requerimientos especiales (opcional)</label>
+                <textarea id="f_specs" placeholder="Alergias, horario, decoración, montaje…"></textarea>
+                <div class="row">
+                    <button type="button" class="link" onclick="mostrarCotizaciones()">Cancelar</button>
+                    <button type="submit">Siguiente →</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- ===== HU002: validar solicitud ===== -->
+        <section id="revision">
+            <ol class="steps">
+                <li class="on">Datos del evento</li>
+                <li class="on">Revisión</li>
+                <li>Proforma</li>
+            </ol>
+            <h2>Revisa tu solicitud</h2>
+            <p class="sub">Corrige cualquier error antes de enviarla.</p>
+            <div class="box datos" id="revDatos">
+                <p><b>Nombre</b> <span data-campo="nombre"></span></p>
+                <p><b>Teléfono</b> <span data-campo="tel"></span></p>
+                <p><b>Tipo de servicio</b> <span data-campo="tipo"></span></p>
+                <p><b>Fecha</b> <span data-campo="fechaTexto"></span> (<span data-campo="anticipacion"></span>)</p>
+                <p><b>Comensales</b> <span data-campo="com"></span></p>
+                <p><b>Ubicación</b> <span data-campo="ubic"></span></p>
+                <p class="full"><b>Requerimientos especiales</b> <span data-campo="specs"></span></p>
+            </div>
+            <p class="nota" data-campo="excepcionTexto" data-ocultar id="revExcepcion"></p>
+            <div class="tabla" style="margin-top:14px">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Elemento</th>
+                            <th class="num">Cantidad</th>
+                        </tr>
+                    </thead>
+                    <tbody id="revItems"></tbody>
+                </table>
+            </div>
+            <p class="hint">El vendedor elaborará la proforma con los precios y te la enviará.</p>
+            <div class="row">
+                <button class="link" onclick="mostrarEvento()">← Corregir</button>
+                <button onclick="enviarEvento()">Enviar solicitud</button>
+            </div>
+        </section>
+
+        <!-- ===== Cliente: mis solicitudes ===== -->
+        <section id="misCotizaciones">
+            <h2>Mis solicitudes</h2>
+            <p class="sub">Sigue tus proformas y pedidos.</p>
+            <div class="box vacio" id="sinCotizaciones">
+                Aún no tienes solicitudes.<br><br>
+                <button onclick="nuevoEvento()">Registrar mi primera solicitud</button>
+            </div>
+            <div id="listaCotizaciones"></div>
+        </section>
+
+        <!-- ===== HU017 / HU018: ver pedido y proforma (cliente) ===== -->
+        <section id="verCotizacion">
+            <h2>Solicitud <span data-campo="numero"></span> <span class="tag" data-campo="estado"></span></h2>
+            <p class="sub" data-campo="anticipacion"></p>
+            <div class="box datos" id="cDatos">
+                <p><b>Nombre</b> <span data-campo="nombre"></span></p>
+                <p><b>Teléfono</b> <span data-campo="tel"></span></p>
+                <p><b>Tipo de servicio</b> <span data-campo="tipo"></span></p>
+                <p><b>Fecha</b> <span data-campo="fechaTexto"></span></p>
+                <p><b>Comensales</b> <span data-campo="com"></span></p>
+                <p><b>Ubicación</b> <span data-campo="ubic"></span></p>
+                <p class="full"><b>Requerimientos especiales</b> <span data-campo="specs"></span></p>
+            </div>
+            <p class="nota" data-campo="excepcionTexto" data-ocultar></p>
+
+            <div class="box" id="sinProforma">
+                <p>⏳ Aún no recibes una proforma. Esto fue lo que solicitaste:</p>
+                <div class="tabla">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Elemento</th>
+                                <th class="num">Cantidad</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cSolicitado"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="cProforma"></div>
+            <div class="row" id="accionesProforma">
+                <span></span>
+                <div class="grupo">
+                    <button class="link" id="btnImprimir" onclick="window.print()">Imprimir / PDF</button>
+                    <button class="link" id="btnRenovar" onclick="pedirRenovacion()">Pedir nueva proforma</button>
+                    <button class="link" id="btnCambios" onclick="pedirCambios()">Pedir cambios</button>
+                    <button class="danger" id="btnRechazar" onclick="rechazarProforma()">Rechazar</button>
+                    <button id="btnAceptar" onclick="aceptarProforma()">Aceptar proforma</button>
+                </div>
+            </div>
+
+            <div id="cPedido"></div>
+
+            <div class="box" id="panelPago">
+                <h3>Registrar pago adelantado</h3>
+                <p>Para reservar tu evento paga el 50%: <b id="pgMonto"></b></p>
+                <div class="cols">
+                    <div>
+                        <label for="pg_metodo">Método de pago</label>
+                        <select id="pg_metodo">
+                            <option value="">Seleccione…</option>
+                            <option>Transferencia bancaria</option>
+                            <option>Yape</option>
+                            <option>Plin</option>
+                            <option>Depósito en agencia</option>
+                            <option>Tarjeta</option>
+                        </select>
+                    </div>
+                    <div><label for="pg_ref">N° de operación</label><input id="pg_ref"></div>
+                </div>
+                <div class="row"><span></span><button onclick="pagarAdelanto()">Registrar pago adelantado</button></div>
+            </div>
+
+            <div class="row">
+                <button class="link" onclick="mostrarCotizaciones()">← Volver</button>
+                <button class="danger" id="btnCancelar" onclick="cancelarPedido()">Cancelar pedido</button>
+            </div>
+        </section>
+
+        <!-- ===== HU016: comprobante de pago ===== -->
+        <section id="comprobante">
+            <div class="box datos comprobante">
+                <h2 class="full">Comprobante de pago <span data-campo="cpCodigo"></span></h2>
+                <p><b>Fecha</b> <span data-campo="cpFecha"></span></p>
+                <p><b>Cliente</b> <span data-campo="cpCliente"></span></p>
+                <p><b>Pedido</b> <span data-campo="cpPedido"></span></p>
+                <p><b>Método</b> <span data-campo="cpMetodo"></span></p>
+                <p class="full"><b>Concepto</b> <span data-campo="cpConcepto"></span></p>
+                <p><b>Monto pagado</b> <span class="gran" data-campo="cpMonto"></span></p>
+                <p><b>Saldo pendiente</b> <span data-campo="cpSaldo"></span></p>
+            </div>
+            <div class="row">
+                <button class="link" onclick="retorno()">← Volver</button>
+                <button onclick="window.print()">Imprimir / PDF</button>
+            </div>
+        </section>
+
+        <!-- ===== HU012: avisos ===== -->
+        <section id="avisos">
+            <h2>Avisos</h2>
+            <p class="sub">Cambios de estado de tus proformas y pedidos.</p>
+            <div class="box vacio" id="sinAvisos">No tienes avisos todavía.</div>
+            <div id="listaAvisos"></div>
+        </section>
+
+        <!-- ===== HU003: bandeja del vendedor ===== -->
+        <section id="solicitudes">
+            <h2>Bandeja de solicitudes</h2>
+            <p class="sub">Proformas y pedidos de tus clientes, con lo pendiente primero.</p>
+            <div class="stats" id="stats"></div>
+            <div class="filtros">
+                <div>
+                    <label for="buscar">Buscar</label>
+                    <input id="buscar" type="search" placeholder="Cliente, servicio, N°…">
+                </div>
+                <div>
+                    <label for="filtroEstado">Estado</label>
+                    <select id="filtroEstado"></select>
+                </div>
+            </div>
+            <div class="box vacio" id="sinSolicitudes">No hay solicitudes que mostrar.</div>
+            <div class="tabla" id="tablaSolicitudes">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>N°</th>
+                            <th>Cliente</th>
+                            <th>Evento</th>
+                            <th>Descripción</th>
+                            <th>Estado</th>
+                            <th>Pendiente</th>
+                            <th>Prioridad</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="filasSolicitudes"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ===== Vendedor: gestionar una solicitud ===== -->
+        <section id="gestion">
+            <h2>Solicitud <span data-campo="numero"></span> <span class="tag" data-campo="estado"></span></h2>
+            <p class="sub" data-campo="anticipacion"></p>
+            <div class="box datos">
+                <p><b>Cliente</b> <span data-campo="nombre"></span></p>
+                <p><b>Teléfono</b> <span data-campo="tel"></span></p>
+                <p><b>Tipo de servicio</b> <span data-campo="tipo"></span></p>
+                <p><b>Fecha</b> <span data-campo="fechaTexto"></span></p>
+                <p><b>Comensales</b> <span data-campo="com"></span></p>
+                <p><b>Ubicación</b> <span data-campo="ubic"></span></p>
+                <p class="full"><b>Requerimientos especiales</b> <span data-campo="specs"></span></p>
+            </div>
+            <p class="nota" data-campo="excepcionTexto" data-ocultar></p>
+
+            <div class="box" id="gExcepcion">
+                <h3>Solicitud con menos de 30 días</h3>
+                <p>Autoriza solo si la fecha está disponible.</p>
+                <div class="row" style="margin-top:12px"><span></span>
+                    <div class="grupo">
+                        <button class="danger" onclick="resolverExcepcion(false)">Denegar</button>
+                        <button onclick="resolverExcepcion(true)">Autorizar</button>
+                    </div>
+                </div>
+            </div>
+
+            <details class="box" id="gSolicitadoBox">
+                <summary>Elementos solicitados por el cliente</summary>
+                <div class="tabla" style="margin-top:12px">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Elemento</th>
+                                <th>Precio / unidad</th>
+                                <th class="num">Cant.</th>
+                                <th class="num">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gSolicitado"></tbody>
+                    </table>
+                </div>
+            </details>
+
+            <div id="gProforma"></div>
+            <div id="gPedido"></div>
+
+            <div class="box" id="panelSaldo">
+                <h3>Registrar pago del saldo (50%)</h3>
+                <p>Saldo a cobrar: <b id="sdMonto"></b>. Debe registrarse antes de la fecha del evento.</p>
+                <div class="cols">
+                    <div>
+                        <label for="sd_metodo">Método de pago</label>
+                        <select id="sd_metodo">
+                            <option value="">Seleccione…</option>
+                            <option>Transferencia bancaria</option>
+                            <option>Yape</option>
+                            <option>Plin</option>
+                            <option>Depósito en agencia</option>
+                            <option>Tarjeta</option>
+                            <option>Efectivo</option>
+                        </select>
+                    </div>
+                    <div><label for="sd_ref">N° de operación / recibo</label><input id="sd_ref"></div>
+                </div>
+                <div class="row"><span></span><button onclick="cobrarSaldo()">Registrar saldo</button></div>
+            </div>
+
+            <div class="row">
+                <button class="link" onclick="mostrarSolicitudes()">← Volver</button>
+                <div class="grupo">
+                    <button class="link" id="gbImprimir" onclick="window.print()">Imprimir</button>
+                    <button id="gbCrear" onclick="crearProforma()">Elaborar proforma</button>
+                    <button id="gbEditar" onclick="editarProforma()">Continuar borrador</button>
+                    <button id="gbNueva" onclick="nuevaVersion()">Generar nueva versión</button>
+                    <button id="gbConfirmar" onclick="confirmarPedido()">Confirmar pedido</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== HU004 / HU005: elaborar proforma ===== -->
+        <section id="proforma">
+            <h2>Proforma <span data-campo="pfCodigo"></span> <span class="tag" data-campo="pfEstado"></span></h2>
+            <p class="sub">Los cambios se guardan automáticamente. Al enviarla, los precios quedan fijos.</p>
+            <div class="box datos">
+                <p><b>Cliente</b> <span data-campo="nombre"></span></p>
+                <p><b>Tipo de servicio</b> <span data-campo="tipo"></span></p>
+                <p><b>Fecha</b> <span data-campo="fechaTexto"></span></p>
+                <p><b>Comensales</b> <span data-campo="com"></span></p>
+                <p class="full"><b>Requerimientos especiales</b> <span data-campo="specs"></span></p>
+            </div>
+            <p class="nota" data-campo="atiende" data-ocultar></p>
+            <div class="tabla" style="margin-top:14px">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Descripción</th>
+                            <th>Unidad</th>
+                            <th>Cant.</th>
+                            <th>Precio (S/)</th>
+                            <th class="num">Subtotal</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="filasItems"></tbody>
+                </table>
+            </div>
+            <div class="row" style="margin-top:12px"><button class="link small" onclick="agregarItem()">+ Agregar
+                    ítem</button></div>
+            <div class="cols">
+                <div><label for="p_validez">Validez de la proforma (días)</label><input id="p_validez" type="number"
+                        min="1" max="90"></div>
+                <div><label for="p_notas">Condiciones</label><input id="p_notas"
+                        placeholder="Adelanto del 50%, saldo antes del evento…"></div>
+            </div>
+            <p class="total">
+                Subtotal: <span data-campo="subtotal"></span><br>
+                IGV (18%): <span data-campo="igv"></span><br>
+                <span class="gran">Total: <span data-campo="total"></span></span><br>
+                Adelanto (50%): <span data-campo="adelanto"></span>
+            </p>
+            <div class="row">
+                <button class="link" onclick="gestionar(pedidoId)">← Volver</button>
+                <div class="grupo">
+                    <button class="link" onclick="guardarBorrador()">Guardar borrador</button>
+                    <button onclick="enviarProforma()">Enviar proforma</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <datalist id="unidades">
+        <option>persona</option>
+        <option>unidad</option>
+        <option>docena</option>
+        <option>copa</option>
+        <option>set</option>
+        <option>turno</option>
+        <option>hora</option>
+        <option>servicio</option>
+    </datalist>
+
+    <!-- ===== Moldes que el JS copia ===== -->
+
+    <template id="tplElemento">
+        <tr>
+            <td data-label="Elemento" data-campo="desc"></td>
+            <td data-label="Cantidad"><input data-item="cant" type="number" min="0"></td>
+            <td><button type="button" class="icon" data-accion="quitar" title="Quitar" aria-label="Quitar">✕</button></td>
+        </tr>
+    </template>
+
+    <template id="tplLineaCant">
+        <tr>
+            <td data-label="Elemento" data-campo="desc"></td>
+            <td class="num" data-label="Cantidad" data-campo="cant"></td>
+        </tr>
+    </template>
+
+    <template id="tplLinea">
+        <tr>
+            <td data-label="Elemento" data-campo="desc"></td>
+            <td data-label="Precio / unidad" data-campo="precioUnidad"></td>
+            <td class="num" data-label="Cant." data-campo="cant"></td>
+            <td class="num" data-label="Subtotal" data-campo="subLinea"></td>
+        </tr>
+    </template>
+
+    <template id="tplProforma">
+        <div class="box">
+            <div class="head">
+                <h3>Proforma <span data-campo="pfCodigo"></span> <span data-campo="pfEstado"></span></h3>
+                <select data-role="version" aria-label="Versión de la proforma" class="auto"></select>
+            </div>
+            <p class="sub" data-campo="pfVigencia" style="margin:6px 0 12px"></p>
+            <div class="tabla">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Elemento</th>
+                            <th>Precio / unidad</th>
+                            <th class="num">Cant.</th>
+                            <th class="num">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody data-role="items"></tbody>
+                </table>
+            </div>
+            <p class="total">
+                Subtotal: <span data-campo="subtotal"></span><br>
+                IGV (18%): <span data-campo="igv"></span><br>
+                <span class="gran">Total: <span data-campo="total"></span></span><br>
+                Adelanto (50%): <span data-campo="adelanto"></span> · Saldo (50%): <span data-campo="saldo"></span>
+            </p>
+            <p class="nota" data-role="nota"></p>
+        </div>
+    </template>
+
+    <template id="tplPedido">
+        <div class="box">
+            <div class="head">
+                <h3>Pedido <span data-campo="peCodigo"></span> <span data-campo="peEstado"></span></h3>
+            </div>
+            <div class="datos" style="margin:10px 0">
+                <p><b>Total del pedido</b> <span data-campo="peTotal"></span></p>
+                <p><b>Adelanto (50%)</b> <span data-campo="peAdelanto"></span></p>
+                <p><b>Saldo (50%)</b> <span data-campo="peSaldo"></span></p>
+                <p><b>Pagado</b> <span data-campo="pePagado"></span> · <b style="display:inline">Pendiente</b> <span
+                        data-campo="pePendiente"></span></p>
+            </div>
+            <div class="tabla">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Comprobante</th>
+                            <th>Concepto</th>
+                            <th>Fecha</th>
+                            <th>Método</th>
+                            <th class="num">Monto</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody data-role="pagos"></tbody>
+                </table>
+            </div>
+            <p class="nota" data-role="nota"></p>
+        </div>
+    </template>
+
+    <template id="tplPago">
+        <tr>
+            <td data-label="Comprobante" data-campo="comprobante"></td>
+            <td data-label="Concepto" data-campo="concepto"></td>
+            <td data-label="Fecha" data-campo="fechaTexto"></td>
+            <td data-label="Método" data-campo="metodo"></td>
+            <td class="num" data-label="Monto" data-campo="montoTexto"></td>
+            <td><button class="link small" data-accion="ver">Ver</button></td>
+        </tr>
+    </template>
+
+    <template id="tplCotizacion">
+        <div class="box">
+            <div class="head">
+                <h3>Solicitud <span data-campo="numero"></span></h3>
+                <span class="tag" data-campo="estado"></span>
+            </div>
+            <p data-campo="resumen"></p>
+            <p><b data-campo="totalTexto"></b></p>
+            <p class="nota" data-campo="excepcionTexto" data-ocultar></p>
+            <div class="row" style="margin-top:12px">
+                <div class="grupo">
+                    <button class="small" data-accion="ver">Ver detalle</button>
+                    <button class="link small" data-accion="modificar">Modificar</button>
+                </div>
+                <button class="danger small" data-accion="cancelar">Cancelar pedido</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="tplSolicitud">
+        <tr>
+            <td data-label="N°" data-campo="numero"></td>
+            <td data-label="Cliente" data-campo="nombre"></td>
+            <td data-label="Evento" data-campo="fechaTexto"></td>
+            <td data-label="Descripción" data-campo="descripcion"></td>
+            <td data-label="Estado"><span data-campo="estado"></span></td>
+            <td data-label="Pendiente"><span data-campo="pendiente"></span></td>
+            <td data-label="Prioridad"><span data-campo="prioridad"></span></td>
+            <td><button class="small" data-accion="abrir">Abrir</button></td>
+        </tr>
+    </template>
+
+    <template id="tplItem">
+        <tr>
+            <td data-label="Descripción"><input data-item="desc" placeholder="Ej. Postres, decoración…"></td>
+            <td data-label="Unidad"><input data-item="unidad" list="unidades"></td>
+            <td data-label="Cant."><input data-item="cant" type="number" min="0"></td>
+            <td data-label="Precio (S/)"><input data-item="precio" type="number" min="0" step="0.01"></td>
+            <td class="num" data-label="Subtotal" data-campo="subLinea"></td>
+            <td><button class="icon" data-accion="quitar" title="Quitar ítem" aria-label="Quitar ítem">✕</button></td>
+        </tr>
+    </template>
+
+    <template id="tplAviso">
+        <div class="box aviso">
+            <p data-campo="texto"></p>
+            <div class="head">
+                <small class="sub" data-campo="fechaTexto"></small>
+                <button class="link small" data-accion="ver">Ver detalle</button>
+            </div>
+        </div>
+    </template>
+
+    <script src="scripts/main.js"></script>
+</body>
+
+</html>

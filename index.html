@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
-
+ 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,9 +11,9 @@
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-
+ 
 <body>
-
+ 
     <!-- Menú superior (solo con sesión iniciada) -->
     <header id="menu" hidden>
         <div class="brand">🍽️ CATERING <small>PROFORMAS</small></div>
@@ -26,11 +26,11 @@
             <button onclick="salir()">Salir</button>
         </nav>
     </header>
-
+ 
     <div id="mensaje" role="status" hidden></div>
-
+ 
     <main>
-
+ 
         <!-- ===== Iniciar sesión (RN13) ===== -->
         <section id="login">
             <form class="auth" data-accion="entrar">
@@ -48,7 +48,7 @@
                 <p class="centro"><button type="button" class="link small" onclick="ir('admin')">Acceso vendedor</button></p>
             </form>
         </section>
-
+ 
         <!-- ===== Registrarse (HU013) ===== -->
         <section id="registro">
             <form class="auth" data-accion="registrar">
@@ -69,7 +69,7 @@
                 <div class="row"><button type="submit">Crear cuenta</button></div>
             </form>
         </section>
-
+ 
         <!-- ===== Acceso vendedor ===== -->
         <section id="admin">
             <form class="auth" data-accion="entrarAdmin">
@@ -85,7 +85,7 @@
                 </div>
             </form>
         </section>
-
+ 
         <!-- ===== HU001 / HU015: registrar solicitud con paquete y elementos ===== -->
         <section id="evento">
             <ol class="steps">
@@ -113,7 +113,7 @@
                 </div>
                 <p class="hint">Se requieren 30 días de anticipación. Con 10 a 29 días la solicitud necesita
                     autorización del vendedor.</p>
-
+ 
                 <div id="bloqueElementos" hidden>
                     <h3 style="margin-top:22px">Elementos del servicio</h3>
                     <p class="hint" style="margin:0 0 10px">Modifica las cantidades, quita lo que no necesites o agrega más
@@ -136,7 +136,7 @@
                     </div>
                     <p class="hint">Los precios los verás en la proforma que te enviará el vendedor.</p>
                 </div>
-
+ 
                 <label for="f_specs">Requerimientos especiales (opcional)</label>
                 <textarea id="f_specs" placeholder="Alergias, horario, decoración, montaje…"></textarea>
                 <div class="row">
@@ -145,7 +145,7 @@
                 </div>
             </form>
         </section>
-
+ 
         <!-- ===== HU002: validar solicitud ===== -->
         <section id="revision">
             <ol class="steps">
@@ -182,7 +182,7 @@
                 <button onclick="enviarEvento()">Enviar solicitud</button>
             </div>
         </section>
-
+ 
         <!-- ===== Cliente: mis solicitudes ===== -->
         <section id="misCotizaciones">
             <h2>Mis solicitudes</h2>
@@ -193,7 +193,7 @@
             </div>
             <div id="listaCotizaciones"></div>
         </section>
-
+ 
         <!-- ===== HU017 / HU018: ver pedido y proforma (cliente) ===== -->
         <section id="verCotizacion">
             <h2>Solicitud <span data-campo="numero"></span> <span class="tag" data-campo="estado"></span></h2>
@@ -208,7 +208,7 @@
                 <p class="full"><b>Requerimientos especiales</b> <span data-campo="specs"></span></p>
             </div>
             <p class="nota" data-campo="excepcionTexto" data-ocultar></p>
-
+ 
             <div class="box" id="sinProforma">
                 <p>⏳ Aún no recibes una proforma. Esto fue lo que solicitaste:</p>
                 <div class="tabla">
@@ -223,7 +223,7 @@
                     </table>
                 </div>
             </div>
-
+ 
             <div id="cProforma"></div>
             <div class="row" id="accionesProforma">
                 <span></span>
@@ -235,9 +235,9 @@
                     <button id="btnAceptar" onclick="aceptarProforma()">Aceptar proforma</button>
                 </div>
             </div>
-
+ 
             <div id="cPedido"></div>
-
+ 
             <div class="box" id="panelPago">
                 <h3>Registrar pago adelantado</h3>
                 <p>Para reservar tu evento paga el 50%: <b id="pgMonto"></b></p>
@@ -257,13 +257,13 @@
                 </div>
                 <div class="row"><span></span><button onclick="pagarAdelanto()">Registrar pago adelantado</button></div>
             </div>
-
+ 
             <div class="row">
                 <button class="link" onclick="mostrarCotizaciones()">← Volver</button>
                 <button class="danger" id="btnCancelar" onclick="cancelarPedido()">Cancelar pedido</button>
             </div>
         </section>
-
+ 
         <!-- ===== HU016: comprobante de pago ===== -->
         <section id="comprobante">
             <div class="box datos comprobante">
@@ -281,7 +281,7 @@
                 <button onclick="window.print()">Imprimir / PDF</button>
             </div>
         </section>
-
+ 
         <!-- ===== HU012: avisos ===== -->
         <section id="avisos">
             <h2>Avisos</h2>
@@ -289,7 +289,7 @@
             <div class="box vacio" id="sinAvisos">No tienes avisos todavía.</div>
             <div id="listaAvisos"></div>
         </section>
-
+ 
         <!-- ===== HU003: bandeja del vendedor ===== -->
         <section id="solicitudes">
             <h2>Bandeja de solicitudes</h2>
@@ -324,7 +324,7 @@
                 </table>
             </div>
         </section>
-
+ 
         <!-- ===== Vendedor: gestionar una solicitud ===== -->
         <section id="gestion">
             <h2>Solicitud <span data-campo="numero"></span> <span class="tag" data-campo="estado"></span></h2>
@@ -339,7 +339,7 @@
                 <p class="full"><b>Requerimientos especiales</b> <span data-campo="specs"></span></p>
             </div>
             <p class="nota" data-campo="excepcionTexto" data-ocultar></p>
-
+ 
             <div class="box" id="gExcepcion">
                 <h3>Solicitud con menos de 30 días</h3>
                 <p>Autoriza solo si la fecha está disponible.</p>
@@ -350,7 +350,7 @@
                     </div>
                 </div>
             </div>
-
+ 
             <details class="box" id="gSolicitadoBox">
                 <summary>Elementos solicitados por el cliente</summary>
                 <div class="tabla" style="margin-top:12px">
@@ -367,10 +367,10 @@
                     </table>
                 </div>
             </details>
-
+ 
             <div id="gProforma"></div>
             <div id="gPedido"></div>
-
+ 
             <div class="box" id="panelSaldo">
                 <h3>Registrar pago del saldo (50%)</h3>
                 <p>Saldo a cobrar: <b id="sdMonto"></b>. Debe registrarse antes de la fecha del evento.</p>
@@ -391,7 +391,7 @@
                 </div>
                 <div class="row"><span></span><button onclick="cobrarSaldo()">Registrar saldo</button></div>
             </div>
-
+ 
             <div class="row">
                 <button class="link" onclick="mostrarSolicitudes()">← Volver</button>
                 <div class="grupo">
@@ -403,7 +403,7 @@
                 </div>
             </div>
         </section>
-
+ 
         <!-- ===== HU004 / HU005: elaborar proforma ===== -->
         <section id="proforma">
             <h2>Proforma <span data-campo="pfCodigo"></span> <span class="tag" data-campo="pfEstado"></span></h2>
@@ -431,8 +431,11 @@
                     <tbody id="filasItems"></tbody>
                 </table>
             </div>
-            <div class="row" style="margin-top:12px"><button class="link small" onclick="agregarItem()">+ Agregar
-                    ítem</button></div>
+            <div class="agregar" style="margin-top:12px">
+                <select id="p_catalogo" aria-label="Elemento del catálogo"></select>
+                <button type="button" class="link small" onclick="agregarDelCatalogo()">+ Agregar del catálogo</button>
+                <button type="button" class="link small" onclick="agregarItem()">+ Ítem en blanco</button>
+            </div>
             <div class="cols">
                 <div><label for="p_validez">Validez de la proforma (días)</label><input id="p_validez" type="number"
                         min="1" max="90"></div>
@@ -454,7 +457,7 @@
             </div>
         </section>
     </main>
-
+ 
     <datalist id="unidades">
         <option>persona</option>
         <option>unidad</option>
@@ -465,9 +468,9 @@
         <option>hora</option>
         <option>servicio</option>
     </datalist>
-
+ 
     <!-- ===== Moldes que el JS copia ===== -->
-
+ 
     <template id="tplElemento">
         <tr>
             <td data-label="Elemento" data-campo="desc"></td>
@@ -475,14 +478,14 @@
             <td><button type="button" class="icon" data-accion="quitar" title="Quitar" aria-label="Quitar">✕</button></td>
         </tr>
     </template>
-
+ 
     <template id="tplLineaCant">
         <tr>
             <td data-label="Elemento" data-campo="desc"></td>
             <td class="num" data-label="Cantidad" data-campo="cant"></td>
         </tr>
     </template>
-
+ 
     <template id="tplLinea">
         <tr>
             <td data-label="Elemento" data-campo="desc"></td>
@@ -491,7 +494,7 @@
             <td class="num" data-label="Subtotal" data-campo="subLinea"></td>
         </tr>
     </template>
-
+ 
     <template id="tplProforma">
         <div class="box">
             <div class="head">
@@ -521,7 +524,7 @@
             <p class="nota" data-role="nota"></p>
         </div>
     </template>
-
+ 
     <template id="tplPedido">
         <div class="box">
             <div class="head">
@@ -552,7 +555,7 @@
             <p class="nota" data-role="nota"></p>
         </div>
     </template>
-
+ 
     <template id="tplPago">
         <tr>
             <td data-label="Comprobante" data-campo="comprobante"></td>
@@ -563,7 +566,7 @@
             <td><button class="link small" data-accion="ver">Ver</button></td>
         </tr>
     </template>
-
+ 
     <template id="tplCotizacion">
         <div class="box">
             <div class="head">
@@ -582,7 +585,7 @@
             </div>
         </div>
     </template>
-
+ 
     <template id="tplSolicitud">
         <tr>
             <td data-label="N°" data-campo="numero"></td>
@@ -595,7 +598,7 @@
             <td><button class="small" data-accion="abrir">Abrir</button></td>
         </tr>
     </template>
-
+ 
     <template id="tplItem">
         <tr>
             <td data-label="Descripción"><input data-item="desc" placeholder="Ej. Postres, decoración…"></td>
@@ -606,7 +609,7 @@
             <td><button class="icon" data-accion="quitar" title="Quitar ítem" aria-label="Quitar ítem">✕</button></td>
         </tr>
     </template>
-
+ 
     <template id="tplAviso">
         <div class="box aviso">
             <p data-campo="texto"></p>
@@ -616,8 +619,8 @@
             </div>
         </div>
     </template>
-
+ 
     <script src="scripts/main.js"></script>
 </body>
-
+ 
 </html>

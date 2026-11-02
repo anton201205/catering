@@ -776,6 +776,7 @@ function editarProforma() {
     const pf = vigente(buscar(pedidoId));
     $('p_validez').value = pf.validez;
     $('p_notas').value = pf.notas || '';
+    llenarCatalogo();
     dibujarItems();
     ir('proforma');
 }
@@ -813,12 +814,28 @@ function actualizarTotales() {
     });
 }
 
+// Ítem en blanco: el vendedor escribe descripción, unidad, cantidad y precio
 function agregarItem() {
     vigente(buscar(pedidoId)).items.push({ desc: '', unidad: 'unidad', cant: 1, precio: 0 });
     guardar();
     dibujarItems();
     const inputs = $('filasItems').querySelectorAll('[data-item=desc]');
     inputs[inputs.length - 1]?.focus();
+}
+
+// Ítem del catálogo: llega con precio y cantidad según los comensales; luego se puede editar todo
+function llenarCatalogo() {
+    $('p_catalogo').innerHTML = Object.entries(CAT)
+        .map(([id, c]) => `<option value="${id}">${c.n} · ${soles(c.p)} / ${c.u}</option>`)
+        .join('');
+}
+
+function agregarDelCatalogo() {
+    const s = buscar(pedidoId), pf = vigente(s), id = $('p_catalogo').value, c = CAT[id];
+    if (!c || s.pedido || pf.estado != PF.BORR) return;
+    pf.items.push({ cat: id, desc: c.n, unidad: c.u, precio: c.p, cant: defCant(c, s.com) });
+    guardar();
+    dibujarItems();
 }
 
 function guardarBorrador() {

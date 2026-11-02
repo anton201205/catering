@@ -55,6 +55,14 @@ try {
     if (nuevo) db = { ...db, ...nuevo };
     else db.usuarios = (JSON.parse(localStorage.getItem('catering')) || {}).usuarios || [];
 } catch (e) { }
+if (db.catalogo) {
+    Object.keys(CAT).forEach(id => delete CAT[id]);
+    Object.assign(CAT, db.catalogo);
+}
+if (db.paquetes) {
+    Object.keys(PAQUETES).forEach(nombre => delete PAQUETES[nombre]);
+    Object.assign(PAQUETES, db.paquetes);
+}
 const guardar = () => { try { localStorage.setItem('catering2', JSON.stringify(db)); } catch (e) { } };
 
 // ---------- Estado de la interfaz ----------
@@ -71,6 +79,7 @@ let repintar = () => { };
 let retorno = () => { };
 let filtro = { texto: '', estado: '' };
 let temporizador = null;
+let elementoEditando = null;
 
 // ============================================================
 //  Utilidades
@@ -211,7 +220,8 @@ function ir(seccion, texto = '', tipo = 'ok') {
     document.querySelectorAll('.solo-admin').forEach(e => e.hidden = user?.rol != 'admin');
     const nav = {
         evento: 'nuevo', revision: 'nuevo', misCotizaciones: 'mis', verCotizacion: 'mis',
-        comprobante: user?.rol == 'admin' ? 'sol' : 'mis', solicitudes: 'sol', gestion: 'sol', proforma: 'sol', avisos: 'av'
+        comprobante: user?.rol == 'admin' ? 'sol' : 'mis', solicitudes: 'sol', gestion: 'sol', proforma: 'sol',
+        catalogo: 'catalogo', avisos: 'av'
     }[seccion];
     document.querySelectorAll('nav [data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav == nav));
     if (user) {
@@ -321,7 +331,7 @@ function cambiarTipo() {
 }
 
 function recalcularCantidades() {
-    borrador.items.forEach(i => { if (!i.manual && i.cat) i.cant = defCant(CAT[i.cat], $('f_com').value); });
+    borrador.items.forEach(i => { if (!i.manual && i.cat && CAT[i.cat]) i.cant = defCant(CAT[i.cat], $('f_com').value); });
     dibujarElementos();
 }
 
@@ -339,8 +349,13 @@ function dibujarElementos() {
         $('filasElementos').append(fila);
     });
     const usados = new Set(items.map(i => i.cat));
-    $('f_extra').innerHTML = Object.entries(CAT).filter(([id]) => !usados.has(id))
-        .map(([id, c]) => `<option value="${id}">${c.n} (por ${c.u})</option>`).join('');
+    $('f_extra').replaceChildren();
+    Object.entries(CAT).filter(([id]) => !usados.has(id)).forEach(([id, c]) => {
+        const option = document.createElement('option');
+        option.value = id;
+        option.textContent = `${c.n} (por ${c.u})`;
+        $('f_extra').append(option);
+    });
 }
 
 function agregarElemento() {
@@ -708,6 +723,120 @@ function mostrarSolicitudes(texto = '') {
     ir('solicitudes', texto);
 }
 
+// ---------- Vendedor: administrar catálogo ----------
+function mostrarCatalogo(texto = '') {
+    if (user?.rol != 'admin') return aviso('Solo el vendedor puede administrar el catálogo.', 'error');
+    dibujarCatalogo();
+    ir('catalogo', texto);
+}
+
+function dibujarCatalogo() {
+    $('filasCatalogo').innerHTML = '';
+    Object.entries(CAT).forEach(([id, item]) => {
+        const fila = $('tplElementoCatalogo').content.cloneNode(true);
+        llenar(fila, {
+            nombre: item.n,
+            precio: soles(item.p),
+            unidad: item.u,
+            cantidad: item.fijo != null ? `${item.fijo} fija` : `1 por cada ${item.por} comensales`
+        });
+        fila.querySelector('[data-accion=editar]').onclick = () => editarElementoCatalogo(id);
+        fila.querySelector('[data-accion=eliminar]').onclick = () => eliminarElementoCatalogo(id);
+        $('filasCatalogo').append(fila);
+    });
+}
+
+function actualizarEtiquetaCantidadCatalogo() {
+    $('etiquetaCantidadBase').textContent = $('cat_modoCantidad').value == 'fijo'
+        ? 'Cantidad fija'
+        : 'Comensales por unidad';
+}
+
+function limpiarFormularioCatalogo() {
+    elementoEditando = null;
+    document.querySelectorAll('#catalogo .invalid').forEach(e => e.classList.remove('invalid'));
+    $('cat_nombre').value = '';
+    $('cat_precio').value = '';
+    $('cat_unidad').value = '';
+    $('cat_modoCantidad').value = 'por';
+    $('cat_cantidadBase').value = '1';
+    $('tituloElementoCatalogo').textContent = 'Agregar elemento';
+    $('btnGuardarElementoCatalogo').textContent = 'Agregar elemento';
+    $('cancelarEdicionCatalogo').hidden = true;
+    actualizarEtiquetaCantidadCatalogo();
+}
+
+function editarElementoCatalogo(id) {
+    if (user?.rol != 'admin' || !CAT[id]) return;
+    const item = CAT[id];
+    elementoEditando = id;
+    $('cat_nombre').value = item.n;
+    $('cat_precio').value = item.p;
+    $('cat_unidad').value = item.u;
+    $('cat_modoCantidad').value = item.fijo != null ? 'fijo' : 'por';
+    $('cat_cantidadBase').value = item.fijo ?? item.por;
+    $('tituloElementoCatalogo').textContent = 'Modificar elemento';
+    $('btnGuardarElementoCatalogo').textContent = 'Guardar cambios';
+    $('cancelarEdicionCatalogo').hidden = false;
+    actualizarEtiquetaCantidadCatalogo();
+    $('cat_nombre').focus();
+    window.scrollTo({ top: 0 });
+}
+
+function cancelarEdicionCatalogo() {
+    limpiarFormularioCatalogo();
+}
+
+function guardarElementoCatalogo() {
+    if (user?.rol != 'admin') return aviso('Solo el vendedor puede administrar el catálogo.', 'error');
+    const estabaEditando = elementoEditando != null;
+    const nombre = valor('cat_nombre');
+    const unidad = valor('cat_unidad');
+    const precio = Number(valor('cat_precio'));
+    const cantidad = Number(valor('cat_cantidadBase'));
+    if (!validar([
+        ['cat_nombre', nombre.length >= 2, 'Escribe un nombre de al menos 2 caracteres.'],
+        ['cat_precio', Number.isFinite(precio) && precio >= 0, 'El precio debe ser un número igual o mayor que 0.'],
+        ['cat_unidad', unidad.length > 0, 'Escribe la unidad del elemento.'],
+        ['cat_cantidadBase', Number.isInteger(cantidad) && cantidad >= 1, 'La cantidad predeterminada debe ser un número entero mayor que 0.']
+    ])) return;
+
+    let id = elementoEditando || slug(nombre);
+    if (!id) return aviso('El nombre debe incluir letras o números para identificar el elemento.', 'error');
+    if (!elementoEditando) {
+        const base = id;
+        let sufijo = 2;
+        while (CAT[id]) id = `${base}-${sufijo++}`;
+    }
+
+    const item = { n: nombre, p: precio, u: unidad };
+    if ($('cat_modoCantidad').value == 'fijo') item.fijo = cantidad;
+    else item.por = cantidad;
+    CAT[id] = item;
+    db.catalogo = { ...CAT };
+    guardar();
+    limpiarFormularioCatalogo();
+    dibujarCatalogo();
+    aviso(estabaEditando ? 'Elemento modificado correctamente.' : 'Elemento agregado correctamente.');
+}
+
+function eliminarElementoCatalogo(id) {
+    if (user?.rol != 'admin' || !CAT[id]) return;
+    if (!window.confirm(`¿Eliminar "${CAT[id].n}" del catálogo? Se quitará de los paquetes para nuevas solicitudes.`)) return;
+    delete CAT[id];
+    Object.values(PAQUETES).forEach(elementos => {
+        const index = elementos.indexOf(id);
+        if (index >= 0) elementos.splice(index, 1);
+    });
+    db.catalogo = { ...CAT };
+    db.paquetes = Object.fromEntries(Object.entries(PAQUETES).map(([nombre, elementos]) => [nombre, [...elementos]]));
+    guardar();
+    if (elementoEditando == id) limpiarFormularioCatalogo();
+    actualizarTiposServicio();
+    dibujarCatalogo();
+    aviso('Elemento eliminado del catálogo.');
+}
+
 // ============================================================
 //  Vendedor: gestionar una solicitud
 // ============================================================
@@ -751,10 +880,14 @@ function resolverExcepcion(ok) {
 
 // ---------- HU004 elaborar proforma / HU005 nueva versión ----------
 const copiar = items => items.map(({ cat, desc, unidad, precio, cant }) => ({ cat, desc, unidad, precio, cant }));
+const preciosActualesCatalogo = items => copiar(items).map(item => {
+    const catalogo = CAT[item.cat];
+    return catalogo ? { ...item, desc: catalogo.n, unidad: catalogo.u, precio: catalogo.p } : item;
+});
 
 function crearProforma() {
     const s = buscar(pedidoId);
-    s.proformas.push({ v: 1, items: copiar(s.items), validez: 7, notas: 'Adelanto del 50% para reservar; saldo del 50% antes del evento.', estado: PF.BORR, creada: hoyISO() });
+    s.proformas.push({ v: 1, items: preciosActualesCatalogo(s.items), validez: 7, notas: 'Adelanto del 50% para reservar; saldo del 50% antes del evento.', estado: PF.BORR, creada: hoyISO() });
     guardar();
     editarProforma();
 }
@@ -825,9 +958,13 @@ function agregarItem() {
 
 // Ítem del catálogo: llega con precio y cantidad según los comensales; luego se puede editar todo
 function llenarCatalogo() {
-    $('p_catalogo').innerHTML = Object.entries(CAT)
-        .map(([id, c]) => `<option value="${id}">${c.n} · ${soles(c.p)} / ${c.u}</option>`)
-        .join('');
+    $('p_catalogo').replaceChildren();
+    Object.entries(CAT).forEach(([id, c]) => {
+        const option = document.createElement('option');
+        option.value = id;
+        option.textContent = `${c.n} · ${soles(c.p)} / ${c.u}`;
+        $('p_catalogo').append(option);
+    });
 }
 
 function agregarDelCatalogo() {
@@ -889,8 +1026,23 @@ function cobrarSaldo() {
 // ============================================================
 //  Inicio
 // ============================================================
-$('f_tipo').innerHTML = '<option value="">Seleccione un paquete</option>' +
-    Object.entries(PAQUETES).map(([n, l]) => `<option value="${n}">${n} – ${l.length ? l.length + ' elementos' : 'arma el tuyo'}</option>`).join('');
+function actualizarTiposServicio() {
+    const seleccionado = $('f_tipo').value;
+    $('f_tipo').replaceChildren();
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Seleccione un paquete';
+    $('f_tipo').append(placeholder);
+    Object.entries(PAQUETES).forEach(([nombre, elementos]) => {
+        const option = document.createElement('option');
+        option.value = nombre;
+        option.textContent = `${nombre} – ${elementos.length ? elementos.length + ' elementos' : 'arma el tuyo'}`;
+        $('f_tipo').append(option);
+    });
+    $('f_tipo').value = seleccionado;
+}
+
+actualizarTiposServicio();
 $('filtroEstado').innerHTML = '<option value="">Todos</option>' + ESTADOS.map(e => `<option>${e}</option>`).join('');
 
 $('cProforma').append($('tplProforma').content.cloneNode(true));
@@ -904,6 +1056,7 @@ document.querySelectorAll('form[data-accion]').forEach(f => {
 document.addEventListener('input', e => e.target.classList?.remove('invalid'));
 $('f_tipo').onchange = cambiarTipo;
 $('f_com').oninput = recalcularCantidades;
+$('cat_modoCantidad').onchange = actualizarEtiquetaCantidadCatalogo;
 $('buscar').oninput = e => { filtro.texto = e.target.value.trim(); dibujarSolicitudes(); };
 $('filtroEstado').onchange = e => { filtro.estado = e.target.value; dibujarSolicitudes(); };
 $('p_validez').oninput = () => { vigente(buscar(pedidoId)).validez = Math.min(90, Math.max(1, +$('p_validez').value || 7)); guardar(); };

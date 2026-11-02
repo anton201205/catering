@@ -21,6 +21,7 @@
             <button class="solo-cliente" data-nav="nuevo" onclick="nuevoEvento()">Nueva solicitud</button>
             <button class="solo-cliente" data-nav="mis" onclick="mostrarCotizaciones()">Mis solicitudes</button>
             <button class="solo-admin" data-nav="sol" onclick="mostrarSolicitudes()">Bandeja</button>
+            <button class="solo-admin" data-nav="catalogo" onclick="mostrarCatalogo()">Catálogo</button>
             <button data-nav="av" onclick="mostrarAvisos()">Avisos <span class="badge" data-badge hidden></span></button>
             <span id="nombreUsuario"></span>
             <button onclick="salir()">Salir</button>
@@ -324,6 +325,62 @@
                 </table>
             </div>
         </section>
+
+        <!-- ===== Vendedor: administrar catálogo ===== -->
+        <section id="catalogo">
+            <h2>Catálogo de elementos</h2>
+            <p class="sub">Administra los elementos y precios disponibles para nuevas solicitudes y proformas.</p>
+            <form class="box" data-accion="guardarElementoCatalogo">
+                <h3 id="tituloElementoCatalogo">Agregar elemento</h3>
+                <div class="cols">
+                    <div>
+                        <label for="cat_nombre">Nombre</label>
+                        <input id="cat_nombre" maxlength="80" required>
+                    </div>
+                    <div>
+                        <label for="cat_precio">Precio por unidad (S/)</label>
+                        <input id="cat_precio" type="number" min="0" step="0.01" required>
+                    </div>
+                    <div>
+                        <label for="cat_unidad">Unidad</label>
+                        <input id="cat_unidad" list="unidades" maxlength="30" required>
+                    </div>
+                    <div>
+                        <label for="cat_modoCantidad">Cantidad predeterminada</label>
+                        <select id="cat_modoCantidad">
+                            <option value="por">1 por cada cantidad de comensales</option>
+                            <option value="fijo">Cantidad fija</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="cat_cantidadBase" id="etiquetaCantidadBase">Comensales por unidad</label>
+                        <input id="cat_cantidadBase" type="number" min="1" step="1" value="1" required>
+                    </div>
+                </div>
+                <p class="hint">Los cambios de precio no alteran solicitudes ni proformas ya creadas.</p>
+                <div class="row">
+                    <button type="button" class="link" id="cancelarEdicionCatalogo" onclick="cancelarEdicionCatalogo()" hidden>Cancelar edición</button>
+                    <button type="submit" id="btnGuardarElementoCatalogo">Agregar elemento</button>
+                </div>
+            </form>
+            <div class="tabla">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Elemento</th>
+                            <th>Precio / unidad</th>
+                            <th>Unidad</th>
+                            <th>Cantidad predeterminada</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="filasCatalogo"></tbody>
+                </table>
+            </div>
+            <div class="row">
+                <button type="button" class="link" onclick="mostrarSolicitudes()">← Volver a la bandeja</button>
+            </div>
+        </section>
  
         <!-- ===== Vendedor: gestionar una solicitud ===== -->
         <section id="gestion">
@@ -596,6 +653,21 @@
             <td data-label="Pendiente"><span data-campo="pendiente"></span></td>
             <td data-label="Prioridad"><span data-campo="prioridad"></span></td>
             <td><button class="small" data-accion="abrir">Abrir</button></td>
+        </tr>
+    </template>
+
+    <template id="tplElementoCatalogo">
+        <tr>
+            <td data-label="Elemento" data-campo="nombre"></td>
+            <td data-label="Precio / unidad" data-campo="precio"></td>
+            <td data-label="Unidad" data-campo="unidad"></td>
+            <td data-label="Cantidad predeterminada" data-campo="cantidad"></td>
+            <td>
+                <div class="grupo">
+                    <button type="button" class="link small" data-accion="editar">Modificar</button>
+                    <button type="button" class="danger small" data-accion="eliminar">Eliminar</button>
+                </div>
+            </td>
         </tr>
     </template>
  
